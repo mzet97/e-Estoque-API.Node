@@ -1,0 +1,310 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "e-Estoque-API.Node",
+    "description": "Inventory system API with node.js",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Matheus Zeitune",
+      "email": "matheus.zeitune.developer@gmail.com"
+    }
+  },
+  "paths": {
+    "/roles": {
+      "post": {
+        "tags": ["Roles"],
+        "summary": "Create a role",
+        "description": "Create a new role",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Role created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type":"object",
+                  "properties": {
+                    "isDeleted":{
+                      "type":"boolean"
+                    },
+                    "createdAt":{
+                      "type":"string"
+                    },
+                    "updateAt":{
+                      "type":"string"
+                    },
+                    "deletedAt":{
+                      "type":"string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Role already exists."
+          },
+          "401":{
+            "description": "Invalid authentication token."
+          }
+        }
+      },
+      "get": {
+        "tags": ["Roles"],
+        "summary": "List all roles",
+        "description": "Returns all roles paginated.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Number of the page",
+            "required": false,
+            "schema":{
+              "type":"number",
+              "example": "1"
+            },
+            "style": "label"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Number of registers per page",
+            "required": false,
+            "schema":{
+              "type":"number",
+              "example": "15"
+            },
+            "style": "label"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content":{
+              "application/json":{
+                "example": {
+                  "per_page": 15,
+                  "total": 2,
+                  "current_page": 1,
+                  "data": [
+                    {
+                      "id": "debf66eb-d940-439e-aa82-137d9b8f21a6",
+                      "name": "Users",
+                      "isDeleted": false,
+                      "createdAt": "2022-07-16T14:10:48.000Z",
+                      "updateAt": "2022-07-16T14:10:48.000Z",
+                      "deletedAt": null
+                    },
+                    {
+                      "id": "74c8f2c7-5d9d-4c80-872c-c4f619fe6e78",
+                      "name": "Admin",
+                      "isDeleted": false,
+                      "createdAt": "2022-07-16T14:10:48.000Z",
+                      "updateAt": "2022-07-16T14:10:48.000Z",
+                      "deletedAt": null
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401":{
+            "description": "Invalid authentication token."
+          }
+        }
+      }
+    },
+    "/roles/{id}": {
+      "put": {
+        "tags": ["Roles"],
+        "summary": "Update a role",
+        "description": "Update a role.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identify of a role",
+            "required": true,
+            "schema":{
+              "type":"string"
+            },
+            "style": "label"
+          }
+        ],
+        "requestBody":{
+          "content":{
+            "application/json":{
+              "schema":{
+                "type":"object",
+                "properties": {
+                  "name":{
+                    "type":"string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content":{
+              "application/json":{
+                "schema":{
+                  "type":"object",
+                  "properties":{
+                    "id":{
+                      "type":"string"
+                    },
+                    "name":{
+                      "type":"string"
+                    },
+                    "isDeleted":{
+                      "type":"boolean"
+                    },
+                    "createdAt":{
+                      "type":"string"
+                    },
+                    "updateAt":{
+                      "type":"string"
+                    },
+                    "deletedAt":{
+                      "type":"string"
+                    }
+                  }
+                },
+                "example": {
+                  "id": "74c8f2c7-5d9d-4c80-872c-c4f619fe6e78",
+                  "name": "Administrator",
+                  "isDeleted": false,
+                  "createdAt": "2022-07-16T14:10:48.000Z",
+                  "updateAt": "2022-07-16T14:10:48.000Z",
+                  "deletedAt": null
+                }
+              }
+            }
+          },
+          "400":{
+            "description": "Bad request."
+          },
+          "401":{
+            "description": "Invalid authentication token."
+          },
+          "404": {
+            "description": "Role not found."
+          }
+        }
+      },
+      "get": {
+        "tags": ["Roles"],
+        "summary": "Find role by ID",
+        "description": "Returns roles based on ID.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identify of a role",
+            "required": true,
+            "schema":{
+              "type":"string"
+            },
+            "style": "label"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content":{
+              "application/json":{
+                "schema":{
+                  "type":"object",
+                  "properties":{
+                    "id":{
+                      "type":"string"
+                    },
+                    "name":{
+                      "type":"string"
+                    },
+                    "isDeleted":{
+                      "type":"boolean"
+                    },
+                    "createdAt":{
+                      "type":"string"
+                    },
+                    "updateAt":{
+                      "type":"string"
+                    },
+                    "deletedAt":{
+                      "type":"string"
+                    }
+                  }
+                },
+                "example": {
+                  "id": "74c8f2c7-5d9d-4c80-872c-c4f619fe6e78",
+                  "name": "Administrator",
+                  "isDeleted": false,
+                  "createdAt": "2022-07-16T14:10:48.000Z",
+                  "updateAt": "2022-07-16T14:10:48.000Z",
+                  "deletedAt": null
+                }
+              }
+            }
+          },
+          "400":{
+            "description": "Bad request."
+          },
+          "401":{
+            "description": "Invalid authentication token."
+          },
+          "404": {
+            "description": "Role not found."
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Roles"],
+        "summary": "Delete role by ID",
+        "description": "Delete roles based on ID.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identify of a role",
+            "required": true,
+            "schema":{
+              "type":"string"
+            },
+            "style": "label"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content."
+          },
+          "400":{
+            "description": "Bad request."
+          },
+          "401":{
+            "description": "Invalid authentication token."
+          },
+          "404": {
+            "description": "Role not found."
+          }
+        }
+      }
+    }
+  }
+}
