@@ -5,7 +5,7 @@ export class BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string
 
-  @Column({ name: 'is_deleted', type: 'integer', default: 0 }) // Define o nome da coluna como "is_deleted"
+  @Column({ name: 'is_deleted', type: 'integer', default: 0 })
   isDeleted: boolean;
 
   @CreateDateColumn({ name: "created_at" })
