@@ -6,6 +6,49 @@ import UpdateCompanyUseCase from './UpdateCompanyUseCase'
 import UpdateCompanyViewModel from '../../viewModels/UpdateCompanyViewModel'
 import ShowCompanyViewModel from '../../viewModels/ShowCompanyViewModel'
 
+/**
+ * @swagger
+ * /companies/{id}:
+ *   put:
+ *     tags: [Companies]
+ *     summary: Update a company
+ *     description: Updates an existing company with the provided data
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Company unique identifier
+ *         example: "123e4567-e89b-12d3-a456-426614174000"
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Company'
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/Company' }
+ *                 message: { type: string, example: "Empresa atualizada com sucesso" }
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       404:
+ *         description: Not Found
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Error' }
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 export default class UpdateCompanyController implements IController {
   async handle(request: Request, response: Response): Promise<void> {
     const updateCompanyUseCase = container.resolve(UpdateCompanyUseCase)

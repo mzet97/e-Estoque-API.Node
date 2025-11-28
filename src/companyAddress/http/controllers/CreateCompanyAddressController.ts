@@ -5,6 +5,67 @@ import IController from '@shared/useCases/IController'
 import CreateCompanyAddressUseCase from '../../useCases/createCompanyAddress/CreateCompanyAddressUseCase'
 import CompanyAddressViewModel from '../../viewModels/CompanyAddressViewModel'
 
+/**
+ * @swagger
+ * /company-addresses:
+ *   post:
+ *     tags: [Company Addresses]
+ *     summary: Create a new company address
+ *     description: Creates a new company address in the system with the provided data
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateCompanyAddressRequest'
+ *           examples:
+ *             create_headquarters:
+ *               summary: Create headquarters address
+ *               value:
+ *                 companyId: "123e4567-e89b-12d3-a456-426614174000"
+ *                 type: "HEADQUARTERS"
+ *                 street: "Avenida Paulista"
+ *                 number: "1000"
+ *                 complement: "10º andar"
+ *                 district: "Bela Vista"
+ *                 city: "São Paulo"
+ *                 state: "SP"
+ *                 country: "Brasil"
+ *                 zipCode: "01310-100"
+ *                 isHeadquarters: true
+ *             create_branch:
+ *               summary: Create branch address
+ *               value:
+ *                 companyId: "123e4567-e89b-12d3-a456-426614174000"
+ *                 type: "BRANCH"
+ *                 street: "Rua das Flores"
+ *                 number: "123"
+ *                 district: "Centro"
+ *                 city: "Rio de Janeiro"
+ *                 state: "RJ"
+ *                 country: "Brasil"
+ *                 zipCode: "20000-000"
+ *                 department: "Vendas"
+ *     responses:
+ *       201:
+ *         description: Created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   $ref: '#/components/schemas/CompanyAddress'
+ *                 message: { type: string, example: "Endereço da empresa criado com sucesso" }
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+
 export default class CreateCompanyAddressController implements IController {
   async handle(request: Request, response: Response): Promise<void> {
     const createCompanyAddressUseCase = container.resolve(CreateCompanyAddressUseCase)

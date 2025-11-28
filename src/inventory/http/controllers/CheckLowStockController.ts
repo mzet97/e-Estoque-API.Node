@@ -4,6 +4,68 @@ import IController from '@shared/useCases/IController'
 import CheckLowStockUseCase from '../../useCases/checkLowStock/CheckLowStockUseCase'
 import { CheckLowStockViewModel } from '../../useCases/checkLowStock/CheckLowStockUseCase'
 
+/**
+ * @swagger
+ * /inventory/{companyId}/low-stock-check:
+ *   get:
+ *     tags: [Inventory]
+ *     summary: Check low stock items
+ *     description: Returns items with low stock levels based on various criteria
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: companyId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Company unique identifier
+ *         example: "123e4567-e89b-12d3-a456-426614174000"
+ *       - in: query
+ *         name: includeCritical
+ *         schema: { type: boolean, default: true }
+ *         description: Include critical stock items
+ *       - in: query
+ *         name: includeOutOfStock
+ *         schema: { type: boolean, default: true }
+ *         description: Include out of stock items
+ *       - in: query
+ *         name: includeNearExpiry
+ *         schema: { type: boolean, default: true }
+ *         description: Include items near expiry
+ *       - in: query
+ *         name: location
+ *         schema: { type: string }
+ *         description: Filter by location
+ *       - in: query
+ *         name: warehouseZone
+ *         schema: { type: string }
+ *         description: Filter by warehouse zone
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/LowStockItem'
+ *                 message: { type: string, example: "Verificação de estoque baixo realizada" }
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+
 export default class CheckLowStockController implements IController {
   async handle(request: Request, response: Response): Promise<void> {
     try {

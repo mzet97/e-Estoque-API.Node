@@ -11,6 +11,9 @@ import { companiesODataRouter } from '@companies/http/routes/companiesOData.rout
 import { categoriesODataRouter } from '@categories/http/routes/categoriesOData.routes'
 import { productsODataRouter } from '@products/http/routes/productsOData.routes'
 import { salesODataRouter } from '@sales/http/routes/salesOData.routes'
+import { inventoryODataRouter } from '@inventory/http/routes/inventoryOData.routes'
+import { taxesODataRouter } from '@taxs/http/routes/taxesOData.routes'
+import { usersODataRouter } from '@users/http/routes/usersOData.routes'
 
 const routes = Router()
 
@@ -37,5 +40,8 @@ routes.use('/companies', companiesODataRouter)
 routes.use('/categories', categoriesODataRouter)
 routes.use('/products', productsODataRouter)
 routes.use('/sales', salesODataRouter)
+routes.use('/inventory', inventoryODataRouter)
+routes.use('/taxes', taxesODataRouter)
+routes.use('/users', usersODataRouter)
 
 export { routes }

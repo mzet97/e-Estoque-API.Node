@@ -1,26 +1,26 @@
 import { Request, Response } from 'express'
 import { inject, injectable } from 'tsyringe'
-import ListCompaniesODataUseCase from '../../useCases/listCompaniesOData/ListCompaniesODataUseCase'
+import ListInventoryODataUseCase from '../../useCases/listInventoryOData/ListInventoryODataUseCase'
 import IController from '@shared/useCases/IController'
 
 /**
  * @swagger
- * /companies/odata:
+ * /inventory/odata:
  *   get:
- *     tags: [Companies]
- *     summary: List all companies with OData support
- *     description: Returns a list of companies using OData query syntax for advanced filtering, sorting, and pagination
+ *     tags: [Inventory]
+ *     summary: List all inventory with OData support
+ *     description: Returns a list of inventory items using OData query syntax for advanced filtering, sorting, and pagination
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: $filter
  *         schema: { type: string }
- *         description: OData filter expression (e.g., "name eq 'Empresa Exemplo'")
+ *         description: OData filter expression (e.g., "totalQuantity gt 10 and location eq 'Depósito A'")
  *       - in: query
  *         name: $orderby
  *         schema: { type: string }
- *         description: OData orderby expression (e.g., "name asc")
+ *         description: OData orderby expression (e.g., "totalQuantity desc")
  *       - in: query
  *         name: $top
  *         schema: { type: number }
@@ -32,11 +32,11 @@ import IController from '@shared/useCases/IController'
  *       - in: query
  *         name: $select
  *         schema: { type: string }
- *         description: Fields to select (e.g., "id,name,email")
+ *         description: Fields to select (e.g., "id,productId,totalQuantity,location")
  *       - in: query
  *         name: $expand
  *         schema: { type: string }
- *         description: Related entities to expand
+ *         description: Related entities to expand (e.g., "product")
  *       - in: query
  *         name: $count
  *         schema: { type: boolean }
@@ -50,28 +50,36 @@ import IController from '@shared/useCases/IController'
  *               type: object
  *               properties:
  *                 success: { type: boolean, example: true }
- *                 data: { $ref: '#/components/schemas/PagedResult' }
- *                 message: { type: string, example: "Empresas listadas com sucesso com OData" }
+ *                 data:
+ *                   $ref: '#/components/schemas/PagedResult'
+ *                 message: { type: string, example: "Estoque listados com sucesso com OData" }
  *       400:
  *         $ref: '#/components/responses/BadRequest'
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
+
 @injectable()
-export default class ListCompaniesODataController implements IController {
+export default class ListInventoryODataController implements IController {
   constructor(
-    @inject(ListCompaniesODataUseCase.name)
-    private listCompaniesODataUseCase: ListCompaniesODataUseCase,
+    @inject(ListInventoryODataUseCase.name)
+    private listInventoryODataUseCase: ListInventoryODataUseCase,
   ) {}
 
   async handle(req: Request, res: Response): Promise<Response> {
     try {
-      console.log('ListCompaniesODataController.handle:', req.query)
+      console.log('ListInventoryODataController.handle:', req.query)
 
       const oDataQuery = req.oDataQuery
       const userId = (req as any).user?.id
 
-      const result = await this.listCompaniesODataUseCase.execute({
+      const result = await this.listInventoryODataUseCase.execute({
         oDataQuery,
         userId,
         cacheEnabled: true,
@@ -92,10 +100,10 @@ export default class ListCompaniesODataController implements IController {
       return res.json(result)
 
     } catch (error) {
-      console.error('Error in ListCompaniesODataController:', error)
+      console.error('Error in ListInventoryODataController:', error)
       return res.status(500).json({
         success: false,
-        message: 'Erro interno ao listar empresas',
+        message: 'Erro interno ao listar movimentações de estoque',
         error: error instanceof Error ? error.message : 'Unknown error'
       })
     }

@@ -4,6 +4,49 @@ import { container } from 'tsyringe'
 import IController from '@shared/useCases/IController'
 import CreateProductUseCase from './CreateProductUseCase'
 
+/**
+ * @swagger
+ * /products:
+ *   post:
+ *     tags: [Products]
+ *     summary: Create a new product
+ *     description: Creates a new product with the provided data
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateProductRequest'
+ *           examples:
+ *             produto_eletronico:
+ *               summary: Example product
+ *               value:
+ *                 name: "Smartphone Samsung Galaxy"
+ *                 description: "Smartphone com 128GB de armazenamento"
+ *                 sku: "SMG-128-BLK"
+ *                 barCode: "7891234567890"
+ *                 price: 1299.99
+ *                 costPrice: 999.99
+ *                 categoryId: "550e8400-e29b-41d4-a716-446655440000"
+ *     responses:
+ *       201:
+ *         description: Created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   $ref: '#/components/schemas/Product'
+ *                 message: { type: string, example: "Produto criado com sucesso" }
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 export default class CreateProductController implements IController {
   async handle(request: Request, response: Response): Promise<void> {
     const createProductUseCase = container.resolve(CreateProductUseCase)

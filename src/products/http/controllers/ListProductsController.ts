@@ -17,6 +17,73 @@ export interface ListProductsQuery {
   orderDirection?: string
 }
 
+/**
+ * @swagger
+ * /products:
+ *   get:
+ *     tags: [Products]
+ *     summary: List all products
+ *     description: Returns a paginated list of products with optional filtering
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: number, minimum: 1, default: 1 }
+ *         description: Page number
+ *       - in: query
+ *         name: pageSize
+ *         schema: { type: number, minimum: 1, maximum: 100, default: 10 }
+ *         description: Items per page
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *         description: Search term for name, description or SKU
+ *       - in: query
+ *         name: categoryId
+ *         schema: { type: string, format: uuid }
+ *         description: Filter by category ID
+ *       - in: query
+ *         name: companyId
+ *         schema: { type: string, format: uuid }
+ *         description: Filter by company ID
+ *       - in: query
+ *         name: isActive
+ *         schema: { type: boolean }
+ *         description: Filter by active status
+ *       - in: query
+ *         name: minPrice
+ *         schema: { type: number, minimum: 0 }
+ *         description: Minimum price filter
+ *       - in: query
+ *         name: maxPrice
+ *         schema: { type: number, minimum: 0 }
+ *         description: Maximum price filter
+ *       - in: query
+ *         name: orderBy
+ *         schema: { type: string, enum: [name, price, createdAt, updatedAt], default: createdAt }
+ *         description: Field to order by
+ *       - in: query
+ *         name: orderDirection
+ *         schema: { type: string, enum: [ASC, DESC], default: DESC }
+ *         description: Order direction
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   $ref: '#/components/schemas/PagedResult'
+ *                 message: { type: string, example: "Produtos listados com sucesso" }
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 export default class ListProductsController implements IController {
   async handle(request: Request, response: Response): Promise<void> {
     const query = request.query as ListProductsQuery

@@ -4,6 +4,114 @@ import IController from '@shared/useCases/IController'
 import ListInventoryMovementsUseCase from '../../useCases/listMovements/ListInventoryMovementsUseCase'
 import InventoryViewModel from '../../viewModels/InventoryViewModel'
 
+/**
+ * @swagger
+ * /inventory/movements:
+ *   get:
+ *     tags: [Inventory]
+ *     summary: List inventory movements
+ *     description: Returns a paginated list of inventory movements with optional filtering
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: productId
+ *         schema: { type: string, format: uuid }
+ *         description: Filter by product ID
+ *       - in: query
+ *         name: companyId
+ *         schema: { type: string, format: uuid }
+ *         description: Filter by company ID
+ *       - in: query
+ *         name: userId
+ *         schema: { type: string, format: uuid }
+ *         description: Filter by user ID
+ *       - in: query
+ *         name: movementType
+ *         schema: { type: string, enum: [IN, OUT, ADJUSTMENT, TRANSFER] }
+ *         description: Filter by movement type
+ *       - in: query
+ *         name: movementReason
+ *         schema: { type: string }
+ *         description: Filter by movement reason
+ *       - in: query
+ *         name: status
+ *         schema: { type: string, enum: [PENDING, COMPLETED, CANCELLED] }
+ *         description: Filter by status
+ *       - in: query
+ *         name: qualityStatus
+ *         schema: { type: string, enum: [APPROVED, REJECTED, PENDING] }
+ *         description: Filter by quality status
+ *       - in: query
+ *         name: referenceType
+ *         schema: { type: string }
+ *         description: Filter by reference type
+ *       - in: query
+ *         name: referenceId
+ *         schema: { type: string, format: uuid }
+ *         description: Filter by reference ID
+ *       - in: query
+ *         name: minQuantity
+ *         schema: { type: number }
+ *         description: Minimum quantity
+ *       - in: query
+ *         name: maxQuantity
+ *         schema: { type: number }
+ *         description: Maximum quantity
+ *       - in: query
+ *         name: minDate
+ *         schema: { type: string, format: date }
+ *         description: Start date filter
+ *       - in: query
+ *         name: maxDate
+ *         schema: { type: string, format: date }
+ *         description: End date filter
+ *       - in: query
+ *         name: location
+ *         schema: { type: string }
+ *         description: Filter by location
+ *       - in: query
+ *         name: warehouseZone
+ *         schema: { type: string }
+ *         description: Filter by warehouse zone
+ *       - in: query
+ *         name: page
+ *         schema: { type: number, minimum: 1, default: 1 }
+ *         description: Page number
+ *       - in: query
+ *         name: pageSize
+ *         schema: { type: number, minimum: 1, maximum: 100, default: 20 }
+ *         description: Items per page
+ *       - in: query
+ *         name: orderBy
+ *         schema: { type: string, enum: [quantity, createdAt, updatedAt], default: createdAt }
+ *         description: Field to order by
+ *       - in: query
+ *         name: orderDirection
+ *         schema: { type: string, enum: [ASC, DESC], default: DESC }
+ *         description: Order direction
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *         description: Search term
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   $ref: '#/components/schemas/PagedResult'
+ *                 message: { type: string, example: "Movimentações de estoque listadas com sucesso" }
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+
 export default class ListInventoryMovementsController implements IController {
   async handle(request: Request, response: Response): Promise<void> {
     const listInventoryMovementsUseCase = container.resolve(ListInventoryMovementsUseCase)

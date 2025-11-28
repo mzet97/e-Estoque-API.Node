@@ -6,6 +6,82 @@ import ListCompanyAddressesUseCase from '../../useCases/listCompanyAddresses/Lis
 import { CompanyAddressFilters } from '../../repositories/ICompanyAddressesRepository'
 import CompanyAddressViewModel from '../../viewModels/CompanyAddressViewModel'
 
+/**
+ * @swagger
+ * /company-addresses:
+ *   get:
+ *     tags: [Company Addresses]
+ *     summary: List all company addresses
+ *     description: Returns a paginated list of company addresses with optional filtering
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: companyId
+ *         schema: { type: string, format: uuid }
+ *         description: Filter by company ID
+ *       - in: query
+ *         name: type
+ *         schema: { type: string, enum: [HEADQUARTERS, BRANCH, WAREHOUSE, STORE] }
+ *         description: Filter by address type
+ *       - in: query
+ *         name: city
+ *         schema: { type: string }
+ *         description: Filter by city
+ *       - in: query
+ *         name: state
+ *         schema: { type: string }
+ *         description: Filter by state
+ *       - in: query
+ *         name: isHeadquarters
+ *         schema: { type: boolean }
+ *         description: Filter by headquarters status
+ *       - in: query
+ *         name: isActive
+ *         schema: { type: boolean }
+ *         description: Filter by active status
+ *       - in: query
+ *         name: department
+ *         schema: { type: string }
+ *         description: Filter by department
+ *       - in: query
+ *         name: contactPerson
+ *         schema: { type: string }
+ *         description: Filter by contact person
+ *       - in: query
+ *         name: page
+ *         schema: { type: number, minimum: 1, default: 1 }
+ *         description: Page number
+ *       - in: query
+ *         name: pageSize
+ *         schema: { type: number, minimum: 1, maximum: 100, default: 20 }
+ *         description: Items per page
+ *       - in: query
+ *         name: orderBy
+ *         schema: { type: string, enum: [city, state, type, createdAt, updatedAt], default: createdAt }
+ *         description: Field to order by
+ *       - in: query
+ *         name: orderDirection
+ *         schema: { type: string, enum: [ASC, DESC], default: DESC }
+ *         description: Order direction
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   $ref: '#/components/schemas/PagedResult'
+ *                 message: { type: string, example: "Endereços da empresa listados com sucesso" }
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+
 export default class ListCompanyAddressesController implements IController {
   async handle(request: Request, response: Response): Promise<void> {
     const listCompanyAddressesUseCase = container.resolve(ListCompanyAddressesUseCase)

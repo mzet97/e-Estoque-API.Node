@@ -4,6 +4,66 @@ import IController from '@shared/useCases/IController'
 import ListTaxesUseCase from '../../useCases/listTaxes/ListTaxesUseCase'
 import TaxViewModel from '../../viewModels/TaxViewModel'
 
+/**
+ * @swagger
+ * /taxes:
+ *   get:
+ *     tags: [Taxes]
+ *     summary: List all taxes
+ *     description: Returns a paginated list of taxes with optional filtering
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: name
+ *         schema: { type: string }
+ *         description: Filter by tax name
+ *       - in: query
+ *         name: idCategory
+ *         schema: { type: string, format: uuid }
+ *         description: Filter by category ID
+ *       - in: query
+ *         name: percentage
+ *         schema: { type: number }
+ *         description: Filter by percentage
+ *       - in: query
+ *         name: isActive
+ *         schema: { type: boolean }
+ *         description: Filter by active status
+ *       - in: query
+ *         name: page
+ *         schema: { type: number, minimum: 1, default: 1 }
+ *         description: Page number
+ *       - in: query
+ *         name: pageSize
+ *         schema: { type: number, minimum: 1, maximum: 100, default: 20 }
+ *         description: Items per page
+ *       - in: query
+ *         name: orderBy
+ *         schema: { type: string, enum: [name, percentage, createdAt, updatedAt], default: createdAt }
+ *         description: Field to order by
+ *       - in: query
+ *         name: orderDirection
+ *         schema: { type: string, enum: [ASC, DESC], default: DESC }
+ *         description: Order direction
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   $ref: '#/components/schemas/PagedResult'
+ *                 message: { type: string, example: "Impostos listados com sucesso" }
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+
 export default class ListTaxesController implements IController {
   async handle(request: Request, response: Response): Promise<void> {
     const listTaxesUseCase = container.resolve(ListTaxesUseCase)

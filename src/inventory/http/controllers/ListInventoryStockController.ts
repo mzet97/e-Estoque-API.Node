@@ -4,6 +4,94 @@ import IController from '@shared/useCases/IController'
 import ListInventoryStockUseCase from '../../useCases/listStock/ListInventoryStockUseCase'
 import InventoryViewModel from '../../viewModels/InventoryViewModel'
 
+/**
+ * @swagger
+ * /inventory/stock:
+ *   get:
+ *     tags: [Inventory]
+ *     summary: List inventory stock
+ *     description: Returns a paginated list of inventory stock with optional filtering
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: productId
+ *         schema: { type: string, format: uuid }
+ *         description: Filter by product ID
+ *       - in: query
+ *         name: companyId
+ *         schema: { type: string, format: uuid }
+ *         description: Filter by company ID
+ *       - in: query
+ *         name: location
+ *         schema: { type: string }
+ *         description: Filter by location
+ *       - in: query
+ *         name: warehouseZone
+ *         schema: { type: string }
+ *         description: Filter by warehouse zone
+ *       - in: query
+ *         name: abcClassification
+ *         schema: { type: string, enum: [A, B, C] }
+ *         description: Filter by ABC classification
+ *       - in: query
+ *         name: stockoutRiskLevel
+ *         schema: { type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL] }
+ *         description: Filter by stockout risk level
+ *       - in: query
+ *         name: minTotalQuantity
+ *         schema: { type: number }
+ *         description: Minimum total quantity
+ *       - in: query
+ *         name: maxTotalQuantity
+ *         schema: { type: number }
+ *         description: Maximum total quantity
+ *       - in: query
+ *         name: minAvailableQuantity
+ *         schema: { type: number }
+ *         description: Minimum available quantity
+ *       - in: query
+ *         name: maxAvailableQuantity
+ *         schema: { type: number }
+ *         description: Maximum available quantity
+ *       - in: query
+ *         name: page
+ *         schema: { type: number, minimum: 1, default: 1 }
+ *         description: Page number
+ *       - in: query
+ *         name: pageSize
+ *         schema: { type: number, minimum: 1, maximum: 100, default: 20 }
+ *         description: Items per page
+ *       - in: query
+ *         name: orderBy
+ *         schema: { type: string, enum: [totalQuantity, availableQuantity, createdAt, updatedAt], default: totalQuantity }
+ *         description: Field to order by
+ *       - in: query
+ *         name: orderDirection
+ *         schema: { type: string, enum: [ASC, DESC], default: DESC }
+ *         description: Order direction
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *         description: Search term
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   $ref: '#/components/schemas/PagedResult'
+ *                 message: { type: string, example: "Estoque listado com sucesso" }
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+
 export default class ListInventoryStockController implements IController {
   async handle(request: Request, response: Response): Promise<void> {
     const listInventoryStockUseCase = container.resolve(ListInventoryStockUseCase)

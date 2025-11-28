@@ -1,22 +1,22 @@
 import { Request, Response } from 'express'
 import { inject, injectable } from 'tsyringe'
-import ListCompaniesODataUseCase from '../../useCases/listCompaniesOData/ListCompaniesODataUseCase'
+import ListUsersODataUseCase from '../../useCases/listUsersOData/ListUsersODataUseCase'
 import IController from '@shared/useCases/IController'
 
 /**
  * @swagger
- * /companies/odata:
+ * /users/odata:
  *   get:
- *     tags: [Companies]
- *     summary: List all companies with OData support
- *     description: Returns a list of companies using OData query syntax for advanced filtering, sorting, and pagination
+ *     tags: [Users]
+ *     summary: List all users with OData support
+ *     description: Returns a list of users using OData query syntax for advanced filtering, sorting, and pagination
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: $filter
  *         schema: { type: string }
- *         description: OData filter expression (e.g., "name eq 'Empresa Exemplo'")
+ *         description: OData filter expression (e.g., "name eq 'João' and isActive eq true")
  *       - in: query
  *         name: $orderby
  *         schema: { type: string }
@@ -32,11 +32,11 @@ import IController from '@shared/useCases/IController'
  *       - in: query
  *         name: $select
  *         schema: { type: string }
- *         description: Fields to select (e.g., "id,name,email")
+ *         description: Fields to select (e.g., "id,name,email,firstName")
  *       - in: query
  *         name: $expand
  *         schema: { type: string }
- *         description: Related entities to expand
+ *         description: Related entities to expand (e.g., "role")
  *       - in: query
  *         name: $count
  *         schema: { type: boolean }
@@ -50,28 +50,36 @@ import IController from '@shared/useCases/IController'
  *               type: object
  *               properties:
  *                 success: { type: boolean, example: true }
- *                 data: { $ref: '#/components/schemas/PagedResult' }
- *                 message: { type: string, example: "Empresas listadas com sucesso com OData" }
+ *                 data:
+ *                   $ref: '#/components/schemas/PagedResult'
+ *                 message: { type: string, example: "Usuários listados com sucesso com OData" }
  *       400:
  *         $ref: '#/components/responses/BadRequest'
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
+
 @injectable()
-export default class ListCompaniesODataController implements IController {
+export default class ListUsersODataController implements IController {
   constructor(
-    @inject(ListCompaniesODataUseCase.name)
-    private listCompaniesODataUseCase: ListCompaniesODataUseCase,
+    @inject(ListUsersODataUseCase.name)
+    private listUsersODataUseCase: ListUsersODataUseCase,
   ) {}
 
   async handle(req: Request, res: Response): Promise<Response> {
     try {
-      console.log('ListCompaniesODataController.handle:', req.query)
+      console.log('ListUsersODataController.handle:', req.query)
 
       const oDataQuery = req.oDataQuery
       const userId = (req as any).user?.id
 
-      const result = await this.listCompaniesODataUseCase.execute({
+      const result = await this.listUsersODataUseCase.execute({
         oDataQuery,
         userId,
         cacheEnabled: true,
@@ -92,10 +100,10 @@ export default class ListCompaniesODataController implements IController {
       return res.json(result)
 
     } catch (error) {
-      console.error('Error in ListCompaniesODataController:', error)
+      console.error('Error in ListUsersODataController:', error)
       return res.status(500).json({
         success: false,
-        message: 'Erro interno ao listar empresas',
+        message: 'Erro interno ao listar usuários',
         error: error instanceof Error ? error.message : 'Unknown error'
       })
     }

@@ -6,6 +6,43 @@ import CreateCompanyUseCase from './CreateCompanyUseCase'
 import CreateCompanyViewModel from '../../viewModels/CreateCompanyViewModel'
 import ShowCompanyViewModel from '../../viewModels/ShowCompanyViewModel'
 
+/**
+ * @swagger
+ * /companies:
+ *   post:
+ *     tags: [Companies]
+ *     summary: Create a new company
+ *     description: Creates a new company with the provided data
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Company'
+ *           example:
+ *             name: "Empresa Exemplo Ltda"
+ *             docId: "12.345.678/0001-90"
+ *             email: "contato@empresa.com"
+ *             description: "Descrição da empresa"
+ *             phoneNumber: "(11) 99999-9999"
+ *     responses:
+ *       201:
+ *         description: Created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/Company' }
+ *                 message: { type: string, example: "Empresa criada com sucesso" }
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 export default class CreateCompanyController implements IController {
   async handle(request: Request, response: Response): Promise<void> {
     const createCompanyUseCase = container.resolve(CreateCompanyUseCase)
