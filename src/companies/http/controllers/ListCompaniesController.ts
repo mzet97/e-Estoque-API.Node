@@ -6,6 +6,64 @@ import ListCompaniesUseCase from './ListCompaniesUseCase'
 import ListCompaniesViewModel from '../../viewModels/ListCompaniesViewModel'
 import { CompanyFilters } from '../../repositories/ICompaniesRepository'
 
+/**
+ * @swagger
+ * /companies:
+ *   get:
+ *     tags: [Companies]
+ *     summary: List all companies
+ *     description: Returns a paginated list of companies with optional filtering
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: name
+ *         schema: { type: string }
+ *         description: Company name filter
+ *       - in: query
+ *         name: email
+ *         schema: { type: string }
+ *         description: Company email filter
+ *       - in: query
+ *         name: docId
+ *         schema: { type: string }
+ *         description: Company document ID (CNPJ/CPF) filter
+ *       - in: query
+ *         name: isActive
+ *         schema: { type: boolean }
+ *         description: Filter by active status
+ *       - in: query
+ *         name: page
+ *         schema: { type: number, minimum: 1, default: 1 }
+ *         description: Page number
+ *       - in: query
+ *         name: pageSize
+ *         schema: { type: number, minimum: 1, maximum: 100, default: 20 }
+ *         description: Items per page
+ *       - in: query
+ *         name: orderBy
+ *         schema: { type: string, default: createdAt }
+ *         description: Field to order by
+ *       - in: query
+ *         name: orderDirection
+ *         schema: { type: string, enum: [ASC, DESC], default: DESC }
+ *         description: Order direction
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/PagedResult' }
+ *                 message: { type: string, example: "Empresas listadas com sucesso" }
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 export default class ListCompaniesController implements IController {
   async handle(request: Request, response: Response): Promise<void> {
     const listCompaniesUseCase = container.resolve(ListCompaniesUseCase)

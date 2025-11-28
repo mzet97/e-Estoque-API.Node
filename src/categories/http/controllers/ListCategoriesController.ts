@@ -13,6 +13,57 @@ export interface ListCategoriesQuery {
   orderDirection?: string
 }
 
+/**
+ * @swagger
+ * /categories:
+ *   get:
+ *     tags: [Categories]
+ *     summary: List all categories
+ *     description: Returns a paginated list of categories with optional filtering
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: number, minimum: 1, default: 1 }
+ *         description: Page number
+ *       - in: query
+ *         name: pageSize
+ *         schema: { type: number, minimum: 1, maximum: 100, default: 20 }
+ *         description: Items per page
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *         description: Search term for name or description
+ *       - in: query
+ *         name: isActive
+ *         schema: { type: boolean }
+ *         description: Filter by active status
+ *       - in: query
+ *         name: orderBy
+ *         schema: { type: string, enum: [name, createdAt, level], default: createdAt }
+ *         description: Field to order by
+ *       - in: query
+ *         name: orderDirection
+ *         schema: { type: string, enum: [ASC, DESC], default: DESC }
+ *         description: Order direction
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   $ref: '#/components/schemas/PagedResult'
+ *                 message: { type: string, example: "Categorias listadas com sucesso" }
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 export default class ListCategoriesController implements IController {
   async handle(request: Request, response: Response): Promise<void> {
     const query = request.query as ListCategoriesQuery

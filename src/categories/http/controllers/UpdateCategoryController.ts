@@ -13,6 +13,60 @@ export interface UpdateCategoryViewModel {
   sortOrder?: number
 }
 
+/**
+ * @swagger
+ * /categories/{id}:
+ *   put:
+ *     tags: [Categories]
+ *     summary: Update a category
+ *     description: Updates an existing category with the provided data
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Category unique identifier
+ *         example: "123e4567-e89b-12d3-a456-426614174000"
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateCategoryRequest'
+ *           examples:
+ *             update_name:
+ *               summary: Update name
+ *               value:
+ *                 name: "Eletrônicos e Tecnologia"
+ *             update_active:
+ *               summary: Update status
+ *               value:
+ *                 isActive: false
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   $ref: '#/components/schemas/Category'
+ *                 message: { type: string, example: "Categoria atualizada com sucesso" }
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       404:
+ *         description: Not Found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 export default class UpdateCategoryController implements IController {
   async handle(request: Request, response: Response): Promise<void> {
     const { id } = request.params
