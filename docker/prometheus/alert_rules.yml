@@ -1,0 +1,302 @@
+# Alert Rules for E-Estoque API
+# Production monitoring and alerting rules
+
+groups:
+  - name: eestoque-api.rules
+    rules:
+      # High-level application health
+      - alert: EEstoqueAPIDown
+        expr: up{job="e-estoque-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: e-estoque-api
+        annotations:
+          summary: "E-Estoque API is down"
+          description: "E-Estoque API has been down for more than 1 minute"
+          runbook_url: "https://wiki.eestoque.com/runbooks/api-down"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{job="e-estoque-api",status=~"5.."}[5m]) / rate(http_requests_total{job="e-estoque-api"}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: e-estoque-api
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+          runbook_url: "https://wiki.eestoque.com/runbooks/high-error-rate"
+
+      - alert: VeryHighErrorRate
+        expr: rate(http_requests_total{job="e-estoque-api",status=~"5.."}[5m]) / rate(http_requests_total{job="e-estoque-api"}[5m]) > 0.1
+        for: 30s
+        labels:
+          severity: critical
+          service: e-estoque-api
+        annotations:
+          summary: "Very high error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+          runbook_url: "https://wiki.eestoque.com/runbooks/very-high-error-rate"
+
+      # Performance issues
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="e-estoque-api"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: e-estoque-api
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }}s"
+          runbook_url: "https://wiki.eestoque.com/runbooks/high-response-time"
+
+      - alert: VeryHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="e-estoque-api"}[5m])) > 5
+        for: 2m
+        labels:
+          severity: critical
+          service: e-estoque-api
+        annotations:
+          summary: "Very high response time detected"
+          description: "95th percentile response time is {{ $value }}s"
+          runbook_url: "https://wiki.eestoque.com/runbooks/very-high-response-time"
+
+      # Rate limiting
+      - alert: RateLimitBreached
+        expr: rate(rate_limit_exceeded_total{job="e-estoque-api"}[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          service: e-estoque-api
+        annotations:
+          summary: "Rate limit breaches detected"
+          description: "{{ $value }} rate limit breaches per second"
+          runbook_url: "https://wiki.eestoque.com/runbooks/rate-limit-breaches"
+
+      # Circuit breaker
+      - alert: CircuitBreakerOpen
+        expr: circuit_breaker_state{job="e-estoque-api"} == 1
+        for: 30s
+        labels:
+          severity: warning
+          service: e-estoque-api
+        annotations:
+          summary: "Circuit breaker is open"
+          description: "Circuit breaker for {{ $labels.endpoint }} is open"
+          runbook_url: "https://wiki.eestoque.com/runbooks/circuit-breaker-open"
+
+      # Authentication and security
+      - alert: HighFailedLoginRate
+        expr: rate(auth_failed_total{job="e-estoque-api"}[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: e-estoque-api
+        annotations:
+          summary: "High failed login rate"
+          description: "{{ $value }} failed login attempts per second"
+          runbook_url: "https://wiki.eestoque.com/runbooks/high-failed-login"
+
+      - alert: SuspiciousActivityDetected
+        expr: rate(auth_failed_total{job="e-estoque-api",ip!=""}[1m]) > 10
+        for: 30s
+        labels:
+          severity: critical
+          service: e-estoque-api
+        annotations:
+          summary: "Suspicious activity detected"
+          description: "High failed login rate from IP {{ $labels.ip }}"
+          runbook_url: "https://wiki.eestoque.com/runbooks/suspicious-activity"
+
+  - name: infrastructure.rules
+    rules:
+      # Database connectivity
+      - alert: DatabaseConnectionDown
+        expr: database_connected{job="e-estoque-api"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "Database connection is down"
+          description: "E-Estoque API cannot connect to database"
+          runbook_url: "https://wiki.eestoque.com/runbooks/database-down"
+
+      - alert: DatabaseSlowQueries
+        expr: histogram_quantile(0.95, rate(database_query_duration_seconds_bucket{job="e-estoque-api"}[5m])) > 1
+        for: 3m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Database slow queries detected"
+          description: "95th percentile query time is {{ $value }}s"
+          runbook_url: "https://wiki.eestoque.com/runbooks/database-slow-queries"
+
+      # Redis connectivity
+      - alert: RedisConnectionDown
+        expr: redis_connected{job="e-estoque-api"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis connection is down"
+          description: "E-Estoque API cannot connect to Redis"
+          runbook_url: "https://wiki.eestoque.com/runbooks/redis-down"
+
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes{job="redis"} / redis_memory_max_bytes{job="redis"} > 0.9
+        for: 2m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis memory usage is high"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}"
+
+      # RabbitMQ connectivity
+      - alert: RabbitMQConnectionDown
+        expr: rabbitmq_connected{job="e-estoque-api"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: rabbitmq
+        annotations:
+          summary: "RabbitMQ connection is down"
+          description: "E-Estoque API cannot connect to RabbitMQ"
+          runbook_url: "https://wiki.eestoque.com/runbooks/rabbitmq-down"
+
+      - alert: RabbitMQQueueBacklog
+        expr: rabbitmq_queue_messages{job="rabbitmq"} > 10000
+        for: 5m
+        labels:
+          severity: warning
+          service: rabbitmq
+        annotations:
+          summary: "RabbitMQ queue backlog detected"
+          description: "Queue {{ $labels.queue }} has {{ $value }} messages"
+
+  - name: resource.rules
+    rules:
+      # CPU and Memory usage
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{name="e-estoque-api"}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: e-estoque-api
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% for the last 5 minutes"
+
+      - alert: VeryHighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{name="e-estoque-api"}[5m]) * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          service: e-estoque-api
+        annotations:
+          summary: "Very high CPU usage detected"
+          description: "CPU usage is {{ $value }}% for the last 2 minutes"
+
+      - alert: HighMemoryUsage
+        expr: container_memory_usage_bytes{name="e-estoque-api"} / container_spec_memory_limit_bytes{name="e-estoque-api"} > 0.85
+        for: 3m
+        labels:
+          severity: warning
+          service: e-estoque-api
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+
+      - alert: VeryHighMemoryUsage
+        expr: container_memory_usage_bytes{name="e-estoque-api"} / container_spec_memory_limit_bytes{name="e-estoque-api"} > 0.95
+        for: 1m
+        labels:
+          severity: critical
+          service: e-estoque-api
+        annotations:
+          summary: "Very high memory usage detected"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+
+      # Disk usage
+      - alert: HighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: infrastructure
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage is {{ $value }}%"
+
+      - alert: VeryHighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          service: infrastructure
+        annotations:
+          summary: "Very high disk usage detected"
+          description: "Disk usage is {{ $value }}%"
+
+  - name: business.rules
+    rules:
+      # Business metrics
+      - alert: LowOrderRate
+        expr: rate(orders_created_total{job="e-estoque-api"}[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "Low order creation rate"
+          description: "Order creation rate is {{ $value }} orders per second"
+          runbook_url: "https://wiki.eestoque.com/runbooks/low-order-rate"
+
+      - alert: HighInventoryAlerts
+        expr: rate(inventory_alerts_total{job="e-estoque-api",alert_type="low_stock"}[10m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "High inventory alerts rate"
+          description: "{{ $value }} low stock alerts per minute"
+          runbook_url: "https://wiki.eestoque.com/runbooks/high-inventory-alerts"
+
+      - alert: PaymentProcessingFailures
+        expr: rate(payments_failed_total{job="e-estoque-api"}[5m]) / rate(payments_total{job="e-estoque-api"}[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "High payment processing failure rate"
+          description: "Payment failure rate is {{ $value | humanizePercentage }}"
+
+  - name: security.rules
+    rules:
+      # Security alerts
+      - alert: SSLErrorRate
+        expr: rate(ssl_errors_total{job="nginx"}[5m]) > 1
+        for: 1m
+        labels:
+          severity: critical
+          service: security
+        annotations:
+          summary: "High SSL error rate"
+          description: "{{ $value }} SSL errors per second"
+          runbook_url: "https://wiki.eestoque.com/runbooks/ssl-errors"
+
+      - alert: PotentialDDOS
+        expr: rate(http_requests_total{job="nginx"}[1m]) > 1000
+        for: 30s
+        labels:
+          severity: critical
+          service: security
+        annotations:
+          summary: "Potential DDoS attack detected"
+          description: "{{ $value }} requests per second"
+          runbook_url: "https://wiki.eestoque.com/runbooks/ddos-attack"

@@ -1,2 +1,7 @@
 import '@roles/container'
+import '@companies/container'
+import '@categories/container'
+import '@products/container'
+import '@customers/container'
+import '@sales/container'
 //import '@users/container'

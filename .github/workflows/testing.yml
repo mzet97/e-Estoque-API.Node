@@ -1,0 +1,410 @@
+name: E2E and Security Tests
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Daily at 2 AM
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of test to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - e2e
+          - security
+          - load
+      environment:
+        description: 'Environment to test against'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      duration:
+        description: 'Test duration (for load tests)'
+        required: false
+        default: '5m'
+        type: string
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: 'latest'
+
+jobs:
+  # End-to-End Tests
+  e2e-tests:
+    name: 🧩 End-to-End Tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'e2e' || github.event_name == 'schedule' }}
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: 📚 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🧪 Setup test environment
+        run: |
+          export API_URL="${{ secrets.STAGING_API_URL }}"
+          export DATABASE_URL="${{ secrets.STAGING_DATABASE_URL }}"
+          export REDIS_URL="${{ secrets.STAGING_REDIS_URL }}"
+          echo "Testing against: $API_URL"
+
+      - name: 🧪 Run E2E tests
+        env:
+          API_URL: ${{ secrets.STAGING_API_URL }}
+          TEST_ENV: ${{ github.event.inputs.environment || 'staging' }}
+        run: pnpm run test:e2e
+
+      - name: 📊 Upload E2E test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-test-results-${{ github.run_id }}
+          path: test-reports/e2e-tests.txt
+          retention-days: 30
+
+  # Security Tests
+  security-tests:
+    name: 🛡️ Security Tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'security' || github.event_name == 'schedule' }}
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: 📚 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🛡️ Run security tests
+        run: pnpm run test:security
+
+      - name: 🔍 Run additional security scans
+        run: |
+          # OWASP ZAP Security Scan
+          docker run -t owasp/zap2docker-stable zap-baseline.py \
+            -t ${{ secrets.STAGING_API_URL }} \
+            -r zap-baseline-report.html || true
+
+          # Nikto Web Vulnerability Scan
+          docker run -t frapsoft/nikto \
+            -h ${{ secrets.STAGING_API_URL }} \
+            -output nikto-report.txt || true
+
+      - name: 📊 Upload security test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-test-results-${{ github.run_id }}
+          path: |
+            test-reports/security-tests.txt
+            zap-baseline-report.html
+            nikto-report.txt
+          retention-days: 30
+
+  # Load Testing
+  load-tests:
+    name: ⚡ Load Testing
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'load' || github.event_name == 'schedule' }}
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: 📚 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: ⚡ Setup Artillery for load testing
+        run: npm install -g artillery@latest
+
+      - name: ⚡ Run load tests
+        env:
+          API_URL: ${{ secrets.STAGING_API_URL }}
+          LOAD_TEST_DURATION: ${{ github.event.inputs.duration || '5m' }}
+        run: |
+          artillery run tests/load/load-test.yml --output load-test-results.json
+          artillery report load-test-results.json --output load-test-report.html
+
+      - name: 📊 Analyze load test results
+        run: |
+          echo "📊 Load Test Analysis"
+          node -e "
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('load-test-results.json', 'utf8'));
+            console.log('Duration:', report.aggregate.stats.duration);
+            console.log('Requests:', report.aggregate.stats.requestsCompleted);
+            console.log('RPS:', report.aggregate.stats.rps.mean);
+            console.log('Median latency:', report.aggregate.stats.latency.median);
+            console.log('P95 latency:', report.aggregate.stats.latency.p95);
+          "
+
+      - name: 📊 Upload load test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: load-test-results-${{ github.run_id }}
+          path: |
+            load-test-results.json
+            load-test-report.html
+            test-reports/load-test-report.txt
+          retention-days: 30
+
+  # Performance Benchmark
+  performance-benchmark:
+    name: 📈 Performance Benchmark
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.test_type == 'all' || github.event_name == 'schedule' }}
+    strategy:
+      matrix:
+        node_version: ['18', '20']
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: 'npm'
+
+      - name: 📦 Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: 📚 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔨 Build application
+        run: pnpm run build
+
+      - name: ⚡ Run performance benchmarks
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
+        run: |
+          pnpm run test:performance
+          
+      - name: 📊 Store benchmark results
+        uses: benchmark-action/github-action-benchmark@v1
+        if: github.ref == 'refs/heads/main'
+        with:
+          tool: 'customSmallerIsBetter'
+          output-file-path: test-reports/performance-tests.txt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          comment-on-alert: true
+          fail-on-alert: true
+
+  # Database Migration Tests
+  db-migration-tests:
+    name: 🗃️ Database Migration Tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.test_type == 'all' || contains(github.event.head_commit.message, '[db-migration]') }}
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: 📚 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🗃️ Test database migrations
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/testdb
+        run: |
+          pnpm run db:migrate:test
+          pnpm run db:migrate:rollback:test
+          pnpm run db:seed:test
+
+      - name: 📊 Verify database schema
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/testdb
+        run: |
+          psql "$DATABASE_URL" -c "\\dt" || true
+
+  # Cross-Platform Tests
+  cross-platform-tests:
+    name: 🌐 Cross-Platform Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node_version: ['18', '20']
+        exclude:
+          - os: windows-latest
+            node_version: '18'
+          - os: macos-latest
+            node_version: '18'
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: 'npm'
+
+      - name: 📦 Install pnpm (Unix)
+        if: matrix.os != 'windows-latest'
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: 📦 Install pnpm (Windows)
+        if: matrix.os == 'windows-latest'
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: 📚 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🧪 Run unit tests
+        run: pnpm run test:unit
+
+      - name: 🏗️ Build application
+        run: pnpm run build
+
+      - name: 🔍 Verify build artifacts
+        run: |
+          ls -la dist/
+          node -e "console.log('Build successful on', process.platform, 'with Node', process.version)"
+
+  # Dependency License Audit
+  license-audit:
+    name: 📋 License Audit
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event_name == 'schedule'
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: 📚 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 📋 Run license audit
+        run: |
+          pnpm run license:check || true
+
+      - name: 🔍 Generate SBOM (Software Bill of Materials)
+        run: |
+          npm install -g @cyclonedx/bom
+          cyclonedx-npm --output-file sbom.xml
+          echo "SBOM generated: sbom.xml"
+
+      - name: 📊 Upload license and SBOM reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: license-audit-${{ github.run_id }}
+          path: |
+            license-report.txt
+            sbom.xml
+          retention-days: 30
+
+  # Summary and Notifications
+  test-summary:
+    name: 📊 Test Summary
+    runs-on: ubuntu-latest
+    needs: [e2e-tests, security-tests, load-tests, performance-benchmark, db-migration-tests, cross-platform-tests, license-audit]
+    if: always()
+    steps:
+      - name: 📊 Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: 📋 Generate test summary
+        run: |
+          echo "## 🧪 E-Estoque Test Summary" > test-summary.md
+          echo "" >> test-summary.md
+          echo "**Workflow:** ${{ github.workflow }}" >> test-summary.md
+          echo "**Run ID:** ${{ github.run_id }}" >> test-summary.md
+          echo "**Trigger:** ${{ github.event_name }}" >> test-summary.md
+          echo "" >> test-summary.md
+          
+          echo "### 📈 Test Results" >> test-summary.md
+          echo "- End-to-End Tests: ${{ needs.e2e-tests.result || 'skipped' }}" >> test-summary.md
+          echo "- Security Tests: ${{ needs.security-tests.result || 'skipped' }}" >> test-summary.md
+          echo "- Load Tests: ${{ needs.load-tests.result || 'skipped' }}" >> test-summary.md
+          echo "- Performance Benchmark: ${{ needs.performance-benchmark.result || 'skipped' }}" >> test-summary.md
+          echo "- DB Migration Tests: ${{ needs.db-migration-tests.result || 'skipped' }}" >> test-summary.md
+          echo "- Cross-Platform Tests: ${{ needs.cross-platform-tests.result || 'skipped' }}" >> test-summary.md
+          echo "- License Audit: ${{ needs.license-audit.result || 'skipped' }}" >> test-summary.md
+          echo "" >> test-summary.md
+          
+          echo "### 📦 Artifacts" >> test-summary.md
+          echo "All test artifacts have been uploaded and are available for 30 days." >> test-summary.md
+
+      - name: 📧 Send notification
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#testing'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          message: |
+            🧪 E-Estoque Test Run Completed
+            Workflow: ${{ github.workflow }}
+            Status: ${{ job.status }}
+            Commit: ${{ github.sha }}
+            Branch: ${{ github.ref }}
+          text_positive: '✅ All tests passed'
+          text_negative: '❌ Some tests failed'
+          text_fixed: '🔧 Tests fixed'

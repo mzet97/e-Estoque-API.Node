@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  # E-Estoque API - Development
+  e-estoque-api-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: estoque_api_dev
+    ports:
+      - "3000:3000"
+      - "9229:9229"  # Debug port
+      - "9230:9230"  # Inspector port
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_URL=postgresql://estoque_user:estoque_password_123@postgres:5432/estoque_db
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://estoque_user:estoque_password_123@rabbitmq:5672
+      - JWT_SECRET=dev-jwt-secret-key
+      - LOG_LEVEL=debug
+      - SEED_DATABASE=true
+      - SKIP_SERVICE_INIT=false
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - estoque_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Database PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: estoque_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: estoque_db
+      POSTGRES_USER: estoque_user
+      POSTGRES_PASSWORD: estoque_password_123
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - estoque_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U estoque_user -d estoque_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Cache Redis
+  redis:
+    image: redis:7-alpine
+    container_name: estoque_redis_dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_dev:/data
+    networks:
+      - estoque_network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Message Broker RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: estoque_rabbitmq_dev
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: estoque_user
+      RABBITMQ_DEFAULT_PASS: estoque_password_123
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data_dev:/var/lib/rabbitmq
+    networks:
+      - estoque_network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MailHog (for email testing)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: estoque_mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP port
+      - "8025:8025"  # Web UI port
+    networks:
+      - estoque_network
+
+volumes:
+  postgres_data_dev:
+    driver: local
+  redis_data_dev:
+    driver: local
+  rabbitmq_data_dev:
+    driver: local
+
+networks:
+  estoque_network:
+    driver: bridge

@@ -1,0 +1,7 @@
+export * from './entities/CompanyAddress'
+export * from './repositories/ICompanyAddressesRepository'
+export * from './repositories/CompanyAddressesRepository'
+export * from './validations/companyAddressValidation'
+export * from './viewModels/CompanyAddressViewModel'
+export * from './http/routes/companyAddresses.routes'
+export * from './container/index'

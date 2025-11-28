@@ -11,6 +11,8 @@ export class CreateRolesTable1730083148560 implements MigrationInterface {
               name: 'id',
               type: 'uuid',
               isPrimary: true,
+              generationStrategy: 'uuid',
+              default: 'uuid_generate_v4()',
             },
             {
               name: 'name',
@@ -19,22 +21,22 @@ export class CreateRolesTable1730083148560 implements MigrationInterface {
             },
             {
               name: 'is_deleted',
-              type: 'integer',
-              default: 0,
+              type: 'boolean',
+              default: false,
             },
             {
               name: 'created_at',
-              type: 'timestamp',
-              default: `(datetime('now'))`,
+              type: 'timestamp with time zone',
+              default: 'now()',
             },
             {
               name: 'updated_at',
-              type: 'timestamp',
+              type: 'timestamp with time zone',
               isNullable: true,
             },
             {
               name: 'deleted_at',
-              type: 'timestamp',
+              type: 'timestamp with time zone',
               isNullable: true,
             },
           ],

@@ -1,0 +1,239 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: e-estoque-api-vs
+  namespace: e-estoque
+  labels:
+    app: e-estoque-api
+spec:
+  hosts:
+  - api.eestoque.com
+  - "*.api.eestoque.com"
+  gateways:
+  - e-estoque-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /auth/
+    route:
+    - destination:
+        host: e-estoque-api
+        port:
+          number: 3000
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+  - match:
+    - uri:
+        prefix: /upload/
+    route:
+    - destination:
+        host: e-estoque-api
+        port:
+          number: 3000
+    timeout: 300s
+    retries:
+      attempts: 2
+      perTryTimeout: 30s
+  - match:
+    - uri:
+        prefix: /health
+    route:
+    - destination:
+        host: e-estoque-api
+        port:
+          number: 3000
+  - match:
+    - uri:
+        prefix: /metrics
+    route:
+    - destination:
+        host: e-estoque-api
+        port:
+          number: 9090
+    timeout: 10s
+  - route:
+    - destination:
+        host: e-estoque-api
+        port:
+          number: 3000
+    timeout: 60s
+    retries:
+      attempts: 3
+      perTryTimeout: 15s
+    fault:
+      delay:
+        percentage:
+          value: 0.1
+        fixedDelay: 5s
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: e-estoque-api-dr
+  namespace: e-estoque
+  labels:
+    app: e-estoque-api
+spec:
+  host: e-estoque-api
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 10
+        maxRetries: 3
+        consecutiveGatewayErrors: 5
+        interval: 30s
+        baseEjectionTime: 30s
+        maxEjectionPercent: 50
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      minHealthPercent: 50
+    loadBalancer:
+      simple: LEAST_CONN
+    portLevelSettings:
+    - port:
+        number: 3000
+      connectionPool:
+        tcp:
+          maxConnections: 100
+        http:
+          http1MaxPendingRequests: 50
+          http2MaxRequests: 100
+          maxRequestsPerConnection: 10
+      outlierDetection:
+        consecutive5xxErrors: 5
+        interval: 30s
+        baseEjectionTime: 30s
+    - port:
+        number: 9090
+      connectionPool:
+        tcp:
+          maxConnections: 10
+        http:
+          http1MaxPendingRequests: 5
+          http2MaxRequests: 20
+  subsets:
+  - name: v1
+    labels:
+      version: v1.0.0
+  - name: v2
+    labels:
+      version: v2.0.0
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: e-estoque-gateway
+  namespace: e-estoque
+  labels:
+    app: e-estoque-api
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: e-estoque-tls
+    hosts:
+    - api.eestoque.com
+    - "*.api.eestoque.com"
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - api.eestoque.com
+    - "*.api.eestoque.com"
+    redirect:
+      httpsRedirect: true
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: e-estoque-rate-limit
+  namespace: e-estoque
+  labels:
+    app: e-estoque-api
+spec:
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.local_ratelimit
+        typed_config:
+          "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+          type_url: type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+          value:
+            stat_prefix: "eestoque_rate_limiter"
+            token_bucket:
+              max_tokens: 100
+              tokens_per_fill: 100
+              fill_interval: 60s
+            filter_enabled:
+              runtime_key: "rate_limit_enabled"
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+            filter_enforced:
+              runtime_key: "rate_limit_enforced"
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+            response_headers_to_add:
+            - append: false
+              header:
+                key: "x-ratelimit-limit"
+                value: "100"
+            - append: false
+              header:
+                key: "x-ratelimit-remaining"
+                value: "{% + start.val + end.val %}"
+
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: e-estoque-authz
+  namespace: e-estoque
+  labels:
+    app: e-estoque-api
+spec:
+  selector:
+    matchLabels:
+      app: e-estoque-api
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/e-estoque/sa/e-estoque-api"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
+  - from:
+    - source:
+        ipBlocks: ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+    to:
+    - operation:
+        paths: ["/health", "/metrics"]
+        methods: ["GET"]

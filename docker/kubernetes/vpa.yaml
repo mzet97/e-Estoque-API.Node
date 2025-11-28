@@ -1,0 +1,25 @@
+apiVersion: autoscaling/v2
+kind: VerticalPodAutoscaler
+metadata:
+  name: e-estoque-api-vpa
+  namespace: e-estoque
+  labels:
+    app: e-estoque-api
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: e-estoque-api
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+    - containerName: e-estoque-api
+      minAllowed:
+        cpu: 100m
+        memory: 128Mi
+      maxAllowed:
+        cpu: 2000m
+        memory: 2Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits

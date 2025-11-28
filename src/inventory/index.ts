@@ -1,0 +1,7 @@
+export * from './entities/Inventory'
+export * from './entities/InventoryStock'
+export * from './repositories/IInventoryRepository'
+export * from './repositories/InventoriesRepository'
+export * from './viewModels/InventoryViewModel'
+export * from './http/routes/inventory.routes'
+export * from './container/index'

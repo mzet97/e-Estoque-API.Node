@@ -1,0 +1,7 @@
+export * from './entities/CustomerAddress'
+export * from './repositories/ICustomerAddressesRepository'
+export * from './repositories/CustomerAddressesRepository'
+export * from './validations/customerAddressValidation'
+export * from './viewModels/CustomerAddressViewModel'
+export * from './http/routes/customerAddresses.routes'
+export * from './container/index'

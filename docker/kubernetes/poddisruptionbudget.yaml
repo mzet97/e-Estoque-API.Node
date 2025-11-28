@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: e-estoque-api-pdb
+  namespace: e-estoque
+  labels:
+    app: e-estoque-api
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: e-estoque-api

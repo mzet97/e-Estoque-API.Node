@@ -1,51 +1,111 @@
-import express, { ErrorRequestHandler } from 'express';
-import 'express-async-errors';
-import swaggerUi from 'swagger-ui-express';
-import cors from 'cors';
-import pinoHttp from 'pino-http';
-import { errors } from 'celebrate';
-import { routes } from './routes';
-import { AppError } from '@shared/errors/AppError';
-import swaggerFile from '../../swagger.json';
-import '@shared/container';
-import uploadConfig from '@config/upload';
-import logger from '../log';
+import express from 'express'
+import cors from 'cors'
+import helmet from 'helmet'
+import morgan from 'morgan'
+import rateLimit from 'express-rate-limit'
+import { celebrate, Joi, Segments, errors as celebrateErrors } from 'celebrate'
 
-const app = express();
+// Import our custom middlewares
+import { httpLogger, correlationId } from '@shared/log/logger.middleware'
+import { 
+  errorHandler, 
+  notFoundHandler, 
+  AppError,
+  asyncHandler 
+} from '@shared/errors/errorHandler'
+import { 
+  basicHealthCheck, 
+  detailedHealthCheck, 
+  readinessCheck, 
+  livenessCheck 
+} from '@shared/http/middlewares/healthCheck'
+import { setupSwagger } from '@shared/http/swagger.config'
 
-app.use(cors());
-app.use(express.json());
+// Import routes
+import { routes } from './routes'
 
-app.use(
-  pinoHttp({
-    logger,
-    customLogLevel: (res, err) => (err || res.statusCode >= 500) ? 'error' : 'info',
-    customSuccessMessage: (res) => `Completed ${res.statusCode}`,
-  })
-);
+// Create Express app
+const app = express()
 
-app.use('/files', express.static(uploadConfig.directory));
-app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerFile));
-app.use(routes);
-app.use(errors());
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+}))
 
-const errorHandler: ErrorRequestHandler = (error, request, response, next): void => {
-  if (error instanceof AppError) {
-    response.status(error.statusCode).json({
-      status: 'error',
-      message: error.message,
-    });
-    return;
-  }
+// CORS configuration
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://eestoque.com'] 
+    : ['http://localhost:3000', 'http://localhost:3001'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-ID']
+}))
 
-  logger.error(error);
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
-  response.status(500).json({
-    status: 'error',
-    message: 'Internal server error',
-  });
-};
+// Correlation ID middleware
+app.use(correlationId)
 
-app.use(errorHandler);
+// Logging middleware (must be before routes)
+app.use(httpLogger)
 
-export { app };
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
+  max: parseInt(process.env.RATE_LIMIT_MAX || '100'), // limit each IP to 100 requests per windowMs
+  message: {
+    success: false,
+    message: 'Muitas requisições, tente novamente em alguns minutos',
+    errors: [{
+      code: 'RATE_LIMIT_EXCEEDED',
+      message: 'Rate limit excedido'
+    }]
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+})
+app.use('/api/', limiter)
+
+// Health check endpoints
+app.get('/health', basicHealthCheck)
+app.get('/health/detailed', detailedHealthCheck)
+app.get('/health/readiness', readinessCheck)
+app.get('/health/liveness', livenessCheck)
+
+// Swagger documentation
+setupSwagger(app)
+
+// API routes
+app.use('/api/v1', routes)
+
+// Handle celebrate validation errors
+app.use(celebrateErrors)
+
+// Handle 404 routes
+app.use('*', notFoundHandler)
+
+// Global error handler (must be last)
+app.use(errorHandler)
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully')
+  process.exit(0)
+})
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully')
+  process.exit(0)
+})
+
+export { app }

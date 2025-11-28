@@ -2,6 +2,7 @@ import 'dotenv/config'
 import 'reflect-metadata'
 import { app } from './app'
 import { dataSource } from '../typeorm'
+import '../container'
 
 dataSource.initialize().then(() => {
   app.listen(process.env.PORT, () => {
