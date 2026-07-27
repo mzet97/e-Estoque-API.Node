@@ -6,6 +6,9 @@ import UpdateStockController from '../../controllers/UpdateStockController'
 import CheckLowStockController from '../../controllers/CheckLowStockController'
 import ListInventoryMovementsController from '../controllers/ListInventoryMovementsController'
 import ListInventoryStockController from '../controllers/ListInventoryStockController'
+import GetInventoryStatisticsController from '../controllers/GetInventoryStatisticsController'
+import GetOutOfStockController from '../controllers/GetOutOfStockController'
+import GetExpiredProductsController from '../controllers/GetExpiredProductsController'
 
 const inventoryRouter = Router()
 
@@ -14,6 +17,9 @@ const updateStockController = new UpdateStockController()
 const checkLowStockController = new CheckLowStockController()
 const listInventoryMovementsController = new ListInventoryMovementsController()
 const listInventoryStockController = new ListInventoryStockController()
+const getInventoryStatisticsController = new GetInventoryStatisticsController()
+const getOutOfStockController = new GetOutOfStockController()
+const getExpiredProductsController = new GetExpiredProductsController()
 
 // Apply authentication to all routes
 inventoryRouter.use(authenticateJWT)
@@ -126,13 +132,7 @@ inventoryRouter.get(
       endDate: Joi.date().iso().optional()
     })
   }),
-  (req, res) => {
-    // Placeholder - would implement statistics controller
-    res.status(501).json({ 
-      success: false, 
-      message: 'Statistics endpoint not implemented yet' 
-    })
-  }
+  getInventoryStatisticsController.handle.bind(getInventoryStatisticsController)
 )
 
 // GET /inventory/companies/:companyId/out-of-stock - Get out of stock products
@@ -149,13 +149,7 @@ inventoryRouter.get(
       pageSize: Joi.number().integer().min(1).max(100).default(20)
     })
   }),
-  (req, res) => {
-    // Placeholder - would implement out of stock controller
-    res.status(501).json({ 
-      success: false, 
-      message: 'Out of stock endpoint not implemented yet' 
-    })
-  }
+  getOutOfStockController.handle.bind(getOutOfStockController)
 )
 
 // GET /inventory/companies/:companyId/expired - Get expired products
@@ -171,13 +165,7 @@ inventoryRouter.get(
       pageSize: Joi.number().integer().min(1).max(100).default(20)
     })
   }),
-  (req, res) => {
-    // Placeholder - would implement expired products controller
-    res.status(501).json({ 
-      success: false, 
-      message: 'Expired products endpoint not implemented yet' 
-    })
-  }
+  getExpiredProductsController.handle.bind(getExpiredProductsController)
 )
 
 export { inventoryRouter }

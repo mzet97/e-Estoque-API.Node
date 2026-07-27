@@ -1,10 +1,14 @@
 import { Router } from 'express'
+import { authRouter } from '@auth/http/routes/auth.routes'
 import { rolesRouter } from '@roles/http/routes/roles.routes'
 import { companiesRouter } from '@companies/http/routes/companies.routes'
 import { categoriesRouter } from '@categories/http/routes/categories.routes'
 import { productsRouter } from '@products/http/routes/products.routes'
-import { router as simpleCustomersRouter } from '@customers/routes/SimpleCustomerRoutes'
+import { customersRouter } from '@customers/http/routes/customers.routes'
 import { salesRouter } from '@sales/http/routes/sales.routes'
+import { inventoryRouter } from '@inventory/http/routes/inventory.routes'
+import { taxesRouter } from '@taxs/http/routes/taxes.routes'
+import { usersRouter } from '@users/http/routes/users.routes'
 
 // OData routes
 import { companiesODataRouter } from '@companies/http/routes/companiesOData.routes'
@@ -16,6 +20,9 @@ import { taxesODataRouter } from '@taxs/http/routes/taxesOData.routes'
 import { usersODataRouter } from '@users/http/routes/usersOData.routes'
 
 const routes = Router()
+
+// Auth routes (public)
+routes.use('/auth', authRouter)
 
 // Health check route
 routes.get('/', (request, response) => {
@@ -32,8 +39,11 @@ routes.use('/roles', rolesRouter)
 routes.use('/companies', companiesRouter)
 routes.use('/categories', categoriesRouter)
 routes.use('/products', productsRouter)
-routes.use('/customers', simpleCustomersRouter)
+routes.use('/customers', customersRouter)
 routes.use('/sales', salesRouter)
+routes.use('/inventory', inventoryRouter)
+routes.use('/taxes', taxesRouter)
+routes.use('/users', usersRouter)
 
 // OData API routes
 routes.use('/companies', companiesODataRouter)

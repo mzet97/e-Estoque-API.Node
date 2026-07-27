@@ -107,7 +107,10 @@ export function requireRole(allowedRoles: string[]) {
 
 // Função utilitária para gerar tokens JWT
 export function generateTokens(user: { id: string, email: string, roles: string[], companyId?: string }) {
-  const jwtSecret = process.env.JWT_SECRET || 'default-secret'
+  const jwtSecret = process.env.JWT_SECRET
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET não está configurado')
+  }
   const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '1h'
   const refreshTokenExpiresIn = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d'
 

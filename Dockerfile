@@ -56,19 +56,19 @@ USER nextjs
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=3001
 ENV LOG_LEVEL=info
 
 # Expose port
-EXPOSE 3000
+EXPOSE 3001
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3000/health || exit 1
+    CMD curl -f http://localhost:3001/health || exit 1
 
 # Set entrypoint
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "dist/gateway/GatewayServer.js"]
+CMD ["node", "dist/shared/http/server.js"]
 
 # Labels for metadata
 LABEL maintainer="e-Estoque Team <dev@eestoque.com>"
